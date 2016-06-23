@@ -1,0 +1,1 @@
+curl --socks5 127.0.0.1:9050 -w "@result-format.csv" $1 -o $2.html >> Experimental_Results.csv
