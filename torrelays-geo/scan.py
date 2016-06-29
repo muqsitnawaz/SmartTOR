@@ -118,6 +118,7 @@ def scan_head(controller,curCircuit, url):
   controller.add_event_listener(attach_stream, stem.control.EventType.STREAM)
   try:
     controller.set_conf('__LeaveStreamsUnattached', '1')  # leave stream management to us
+  
     start_time = time.time()
     check_page = query_head(url)
     if check_page == -1:
@@ -125,6 +126,7 @@ def scan_head(controller,curCircuit, url):
     # print check_page
     return time.time() - start_time
   finally:
+    print "Resetting stuff"
     controller.remove_event_listener(attach_stream)
     controller.reset_conf('__LeaveStreamsUnattached')
 
