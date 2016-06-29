@@ -41,8 +41,7 @@ except (ValueError, ImportError):
 
 LINK_REG_EXP = r'/watch_videos?(.*&)?video_ids='
 
-CHARTS_URL = ('http://www.youtube.com/charts/videos_views?p=2'
-              '&gl={country}&t={time_frame}&p={page}')
+CHARTS_URL = ('https://www.youtube.com/channel/UC-9-kyTW8ZkZNDHQJ6FgpwQ')
 
 # Youtube webpage limitation
 MAX_VIDEO_PER_PAGE = 25

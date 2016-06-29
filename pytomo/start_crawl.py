@@ -44,4 +44,5 @@ except ImportError:
     version = None
 
 if __name__ == '__main__':
+    print('Version: '+str(version))
     pytomo.start_pytomo.main(version=version)
