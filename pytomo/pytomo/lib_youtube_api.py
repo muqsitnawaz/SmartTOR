@@ -41,7 +41,7 @@ except (ValueError, ImportError):
 
 LINK_REG_EXP = r'/watch_videos?(.*&)?video_ids='
 
-CHARTS_URL = ('https://www.youtube.com/channel/UC-9-kyTW8ZkZNDHQJ6FgpwQ')
+CHARTS_URL = ('https://www.youtube.com/channel/UCEgdi0XIXXZ-qJOFPf4JSKw')
 
 # Youtube webpage limitation
 MAX_VIDEO_PER_PAGE = 25
