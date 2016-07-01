@@ -175,7 +175,7 @@ def get_custom_bandwidth(controller, low, high, url):
 # Only middle and exit relays are made bottleneck as specified
 # If entry guard cap is less than 1 mb, it is set to infinity
 # ===================================================================================
-def get_custom_bandwidth_opt(low, high, url):
+def get_custom_bandwidth_opt(controller, low, high, url):
     relays = get_relays(controller, low, high)
 
     entry = relays[0];
@@ -259,7 +259,7 @@ def get_best_circuit_bandwidth(url, controller, entry, middle, exit, ntimes):
         path_With_Locations = [entry_relay, middle_relay, exit_relay]
         path_With_Locations = [(x[0],y) for (x,y) in path_With_Locations]
 
-        try:
+        try:d
             circuitId = controller.new_circuit(path, await_build = True)
             circuit = controller.get_circuit(circuitId)
             time = scan_head(controller, circuit, url)
@@ -328,9 +328,9 @@ def experiment_bandwidth_test(controller, url, ntimes, low, high):
 # Optmised for url
 # =====================================================================================
 
-def experiment_bandwidth_test_opt(url, ntimes, low, high):
+def experiment_bandwidth_test_opt(controller, url, ntimes, low, high):
     
-    circuit, distance = get_custom_bandwidth_opt(low, high, url)
+    circuit, distance = get_custom_bandwidth_opt(controller, low, high, url)
 
     url = 'https://' + url
     def attach_stream(stream):
@@ -352,7 +352,7 @@ def experiment_bandwidth_test_opt(url, ntimes, low, high):
 # Run the experiment using tor
 # =====================================================================================
 
-def experiment_tor(websites, ntimes):
+def experiment_tor(controller, websites, ntimes):
     myIP = ipgetter.myip(); # Finds External IP Address.
     my_Address = geolite2.lookup(socket.gethostbyname(myIP)) # Finds Locatation Data using IP Address.
 
@@ -398,7 +398,7 @@ def experiment_tor(websites, ntimes):
 # =====================================================================================
 # Run the experiment using our algorithm.
 # =====================================================================================
-def experiment_smartor(websites, ntimes, num_relays):
+def experiment_smartor(controller, websites, ntimes, num_relays):
     relays = get_relays(controller)
 
     entry = relays[0];
@@ -457,7 +457,7 @@ def experiment_smartor(websites, ntimes, num_relays):
 # =====================================================================================
 # Run the experiment using another algorithm.
 # =====================================================================================
-def experiment_smartor_bandwidth(websites, ntimes, num_relays):
+def experiment_smartor_bandwidth(controller, websites, ntimes, num_relays):
     relays = get_relays(controller)
 
     entry = relays[0];
