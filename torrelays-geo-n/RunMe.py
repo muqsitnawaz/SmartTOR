@@ -4,7 +4,7 @@ import os
 from history import *
 from scan import *
 import sys
-from relays import get_relays, range_relays
+from relays import get_relays
 from geoip import geolite2
 import stem.control
 import ipgetter
@@ -13,8 +13,6 @@ import shutil
 from UserURLHistory import getFetechableURLsFromPage
 from haversine import totalDistance
 import subprocess
-with stem.control.Controller.from_port() as controller:
-    pass
 import operator
 import math
 import time
@@ -91,12 +89,93 @@ def cutUrl(url):
     return url.split('/',1)[0]
 
 # ====================================================================================
+# This function creates a circuit based on bandwidth limit
+# It uses scan head to make sure circuit is working
+# Only middle and exit relays are made bottleneck as specified
+# If entry guard cap is less than 1 mb, it is set to infinity
+# ===================================================================================
+def get_custom_bandwidth(controller, low, high, url):
+    relays = get_relays(controller, low, high)
+
+    entry = relays[0];
+    middle = relays[1];
+    exit = relays[2];
+
+    myIP = ipgetter.myip(); # Finds External IP Address.
+    my_Address = geolite2.lookup(socket.gethostbyname(myIP)) # Finds Locatation Data using IP Address.
+
+    dest_Address =  geolite2.lookup(socket.gethostbyname(cutUrl(url)))
+
+    if (dest_Address == None):
+        print("Couldn't get location of ", url)
+        return -1
+
+    #  Get list of fingerprints for exit nodes
+    num_relays = 1
+
+    url = 'https://www.' + url
+    final_circuit = None
+    loopContinue = True
+    while (loopContinue):
+        print "here"
+        # num_relays = num_relays + 1
+        # First
+        # exit_nodes = get_relays_fingerprint(num_relays, exit, dest_Address.location)
+        # entry_nodes = get_relays_fingerprint(num_relays, entry, my_Address.location)
+        # middleLocation = midpointCalculator(dest_Address.location, my_Address.location)        
+        # middle_nodes = get_relays_fingerprint(num_relays, middle, my_Address.location)
+
+        # if not(len(exit_nodes) > 0 and len(entry_nodes) > 0 and len(exit_nodes) > 0):
+        #     continue
+
+        # entry_relay = entry_nodes[random.randint(0, len(entry_nodes) -1)]
+        # middle_relay = middle_nodes[random.randint(0, len(middle_nodes) -1)]
+        # exit_relay = exit_nodes[random.randint(0, len(exit_nodes) -1)]
+
+        
+        # second
+        entry_relay = entry[random.choice(entry.keys())], random.choice(entry.keys())
+        middle_relay = middle[random.choice(middle.keys())], random.choice(middle.keys())
+        exit_relay = exit[random.choice(exit.keys())], random.choice(exit.keys())
+
+        path = [entry_relay[0][0], middle_relay[0][0], exit_relay[0][0]]
+        # print path
+        # sys.exit()
+        path_With_Locations = [entry_relay, middle_relay, exit_relay]
+        path_With_Locations = [(x[0],y) for (x,y) in path_With_Locations]
+
+
+        try:
+            circuitId = controller.new_circuit(path, await_build = True)
+        except:
+            continue
+        circuit = controller.get_circuit(circuitId)
+        time = scan_head(controller, circuit, url)
+
+        if (time == -1):
+            try:
+                controller.close_circuit(circuit.id)
+            except Exception as e:
+                print e
+            continue
+        else:
+            print time
+            locations = [my_Address.location] + [x[1] for x in path_With_Locations] + [dest_Address.location]
+            distance = totalDistance(locations)
+            final_circuit = circuit
+            loopContinue = False
+
+    return final_circuit, distance
+
+
+
+# ====================================================================================
 # This function creates a circuit based on bandwidth limit and url
 # It uses scan head to make sure circuit is working
 # Only middle and exit relays are made bottleneck as specified
 # If entry guard cap is less than 1 mb, it is set to infinity
 # ===================================================================================
-def get_custom_bandwidth(low, high, url):
+def get_custom_bandwidth_opt(low, high, url):
     relays = get_relays(controller, low, high)
 
     entry = relays[0];
@@ -215,18 +294,43 @@ def readinFile():
 
 
 def main():
-    controller.authenticate()
-    
-    url = "cachefly.cachefly.net/100kb.test"
-    experiment_bandwidth_test(url, 1, 10, 20)
+    with stem.control.Controller.from_port() as controller:
+        controller.authenticate()
+        url = "google.com.pk"
+        experiment_bandwidth_test(controller, url, 1, 10, 20)
 
 # =====================================================================================
 # Run experiments to on circuits in the specified bandwidth
 # =====================================================================================
 
-def experiment_bandwidth_test(url, ntimes, low, high):
+def experiment_bandwidth_test(controller, url, ntimes, low, high):
     
-    circuit, distance = get_custom_bandwidth(low, high, url)
+    circuit, distance = get_custom_bandwidth(controller, low, high, url)
+
+    url = 'https://www.' + url
+    def attach_stream(stream):
+        if stream.status == 'NEW':
+            controller.attach_stream(stream.id, circuit.id)
+    
+    controller.add_event_listener(attach_stream, stem.control.EventType.STREAM)
+    try:
+        controller.set_conf('__LeaveStreamsUnattached', '1')
+        for i in xrange(ntimes): # Check From Nofel
+            print "Start"
+            subprocess.call(("sudo bash RunMe.sh " + url + " Result.txt " + str(distance) + " TOR"), shell=True)
+        print "End"
+    finally:
+        controller.remove_event_listener(attach_stream)
+        controller.reset_conf('__LeaveStreamsUnattached')
+
+# =====================================================================================
+# Run experiments to on circuits in the specified bandwidth
+# Optmised for url
+# =====================================================================================
+
+def experiment_bandwidth_test_opt(url, ntimes, low, high):
+    
+    circuit, distance = get_custom_bandwidth_opt(low, high, url)
 
     url = 'https://' + url
     def attach_stream(stream):
@@ -283,8 +387,8 @@ def experiment_tor(websites, ntimes):
         try:
             controller.set_conf('__LeaveStreamsUnattached', '1')
    
-        for i in xrange(ntimes): # Check From Nofel
-            subprocess.call(("sudo bash RunMe.sh " + url + " Result.txt " + str(distance) + " TOR"), shell=True)
+            for i in xrange(0, ntimes): # Check From Nofel
+                subprocess.call(("sudo bash RunMe.sh " + url + " Result.txt " + str(distance) + " TOR"), shell=True)
 
         finally:
         #     # print "In finally: scan.py"

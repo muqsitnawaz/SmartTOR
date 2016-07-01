@@ -4,6 +4,9 @@ import sys
 import pycurl
 import stem.control
 
+SOCKS_PORT = 9050
+CONNECTION_TIMEOUT = 30  # timeout before we give up on a circuit
+
 # ====================================================================================
 # Take a list of URLs and using pycurl, generates requests for all urls together
 # ====================================================================================
@@ -102,6 +105,9 @@ def query_head(url):
     except pycurl.error as exc:
         print("Unable to reach ", url)
         return -1
+    except:
+        print "Some other error"
+        return -1
 
 
 # ====================================================================================
@@ -119,10 +125,12 @@ def scan_head(controller, curCircuit, url):
         controller.set_conf('__LeaveStreamsUnattached', '1')  # leave stream management to us
 
         start_time = time.time()
+        print "Starting Curl"        
         check_page = query_head(url)
-    if check_page == -1:
-        return -1
-    return time.time() - start_time
+        print "Curl Finished"
+        if check_page == -1:
+            return -1
+        return time.time() - start_time
     finally:
         print "Resetting stuff"
         controller.remove_event_listener(attach_stream)
