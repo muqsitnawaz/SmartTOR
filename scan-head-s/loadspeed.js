@@ -23,10 +23,14 @@ if (system.args.length !== 5) {
     // fs.write('./Results/Results.txt', 'Address: ' + address, 'a')
     name = address.split('.')[1]
 
+ //    page.onResourceError = function(resourceError) {
+	//     page.reason = resourceError.errorString;
+	//     page.reason_url = resourceError.url;
+	// };
+
     page.open(address, function(status) {
-        console.log('SUCCESS')
         if (status !== 'success') {
-            console.log('Failed to Load address');
+            console.log(address + ': Failed to Load address');
         } else {
             t = Date.now() - t;
             fs.write("./Results/Results.txt", ' Page title is ' + page.evaluate(function () {
@@ -34,6 +38,7 @@ if (system.args.length !== 5) {
             }), 'a');
             page.render("./Results/" + type + "_" + name + ntimes + "_" + Date.now().toString() + '.png')
             fs.write("./Results/Results.txt", ' Loading time ' + t + ' msec' + ' Distance ' + distance + ' File Generated ' + type + "_" + name + "_" + ntimes + Date.now().toString()  + '.png' + '\n', 'a');
+            console.log(address + ": SUCCESS")
             
         }
         phantom.exit();

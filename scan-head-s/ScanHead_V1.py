@@ -10,7 +10,7 @@ import pickle
 import subprocess
 # from tempfile import TemporaryFile
 
-CONNECTION_TIMEOUT = 30
+CONNECTION_TIMEOUT = 60
 
 def main():
     with stem.control.Controller.from_port() as controller:
@@ -30,17 +30,17 @@ def main():
                     exit_nodes.append(desc)
 
         websites = ["google.com.pk", "facebook.com", "amazon.com", "youtube.com.pk", "wikipedia.org"]
-        numReadings = 10
+        numReadings = 2
         array = [];
 
         for i in xrange(0,150,10):
             try:
+                print i
                 path = [entry_nodes[i].fingerprint, middle_nodes[i].fingerprint, exit_nodes[i].fingerprint]
                 array.append([(entry_nodes[i].fingerprint,entry_nodes[i].bandwidth, geolite2.lookup((entry_nodes[i].address)).country), 
                     (middle_nodes[i].fingerprint,middle_nodes[i].bandwidth, geolite2.lookup((middle_nodes[i].address)).country)
                     , (exit_nodes[i].fingerprint,exit_nodes[i].bandwidth, geolite2.lookup((exit_nodes[i].address)).country)]);
                 scan(controller, path, websites, numReadings, array)
-                print i
             except Exception as E:
                 print E
                 continue
@@ -123,9 +123,11 @@ def scan_head(controller, websites, numReadings, array, path):
                 if check_page == -1:
                     time_calculated =  0
                     totalReadings = totalReadings - 1
+                    print "FAILURE"
                 else:
                     time_calculated = time.time() - start_time
                     avg_time = avg_time + time_calculated
+                    print "SUCCESS"
                 # result_file.write(url + " , " + str(round(time_calculated,2)) + "\n")
 
             myIP = ipgetter.myip() # Finds External IP Address.
@@ -144,6 +146,7 @@ def scan_head(controller, websites, numReadings, array, path):
 def getPage(controller, websites, numReadings, array, path):
     for url in websites:
         try:
+            print url
             dest_Address =  geolite2.lookup(socket.gethostbyname(url))
             url = 'https://www.' + url;
 
@@ -158,7 +161,7 @@ def getPage(controller, websites, numReadings, array, path):
 
 
             for i in xrange(0,numReadings):
-                command = "phantomjs --proxy=127.0.0.1:9050 --proxy-type=socks5 loadspeed.js " + url + " " + str(distance) + " " + str(i) + " TOR"
+                command = "phantomjs --proxy=127.0.0.1:9050 --proxy-type=socks5 --ignore-ssl-errors=true loadspeed.js " + url + " " + str(distance) + " " + str(i) + " TOR"
                 subprocess.call((command), shell=True);
         except Exception as E:
             print E
